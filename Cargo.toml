@@ -17,6 +17,7 @@ wikidata = "0.3.0"
 chrono = "0.4.23"
 humansize = "2.1.2"
 humantime = "2.1.0"
+flate2 = { version = "1.0.34", features = ["zlib-ng"] }
 
 [target.'cfg(not(target_env = "msvc"))'.dependencies]
 jemallocator = "0.5.0"

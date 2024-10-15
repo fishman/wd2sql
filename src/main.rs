@@ -13,6 +13,7 @@ use std::{
 };
 
 use clap::Parser;
+use flate2::read::GzDecoder;
 use humansize::{format_size, DECIMAL};
 use humantime::format_duration;
 use lazy_static::lazy_static;
@@ -38,6 +39,8 @@ struct Arguments {
     json_file: String,
     sqlite_file: String,
 }
+
+const BUFFER_SIZE: usize = 200 * 1024 * 1024;
 
 fn create_tables(connection: &Connection) -> rusqlite::Result<()> {
     connection
@@ -122,7 +125,7 @@ fn main() -> ExitCode {
     let reader: Box<dyn Read> = if arguments.json_file == "-" {
         Box::new(stdin())
     } else {
-        Box::new(match File::open(&arguments.json_file) {
+        let file = match File::open(&arguments.json_file) {
             Ok(file) => file,
             Err(error) => {
                 eprintln!(
@@ -131,7 +134,13 @@ fn main() -> ExitCode {
                 );
                 return ExitCode::FAILURE;
             }
-        })
+        };
+
+        if arguments.json_file.ends_with(".gz") {
+            Box::new(GzDecoder::new(BufReader::with_capacity(BUFFER_SIZE, file)))
+        } else {
+            Box::new(BufReader::with_capacity(BUFFER_SIZE, file))
+        }
     };
 
     let reader = BufReader::new(reader);
